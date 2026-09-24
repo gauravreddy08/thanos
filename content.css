@@ -36,10 +36,18 @@ body.jl-on {
 
 /* ---------- highlight mode ---------- */
 
+/* The Project Thanos purple. One place to change it. */
+.jl-pill,
+.jl-hl,
+.jl-hl-box {
+  --thanos: #8b5cf6;
+  --thanos-rgb: 139, 92, 246;
+}
+
 .jl-s.jl-hl {
   border-radius: 3px;
-  background: linear-gradient(90deg, rgba(255, 45, 85, 0.16), rgba(255, 159, 10, 0.16), rgba(10, 132, 255, 0.16));
-  text-decoration: underline wavy #ff2d55;
+  background: rgba(var(--thanos-rgb), 0.16);
+  text-decoration: underline wavy var(--thanos);
   text-decoration-thickness: 1.5px;
   text-underline-offset: 3px;
   animation: jl-glow 2.4s ease-in-out infinite;
@@ -47,21 +55,19 @@ body.jl-on {
 
 .jl-hl-box {
   border-radius: 10px;
-  outline: 2px solid #ff2d55;
+  outline: 2px solid var(--thanos);
   outline-offset: 4px;
   animation: jl-box 2.4s linear infinite;
 }
 
 @keyframes jl-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(255, 45, 85, 0.35); }
-  50% { box-shadow: 0 0 14px rgba(10, 132, 255, 0.45); }
+  0%, 100% { box-shadow: 0 0 6px rgba(var(--thanos-rgb), 0.3); }
+  50% { box-shadow: 0 0 14px rgba(var(--thanos-rgb), 0.55); }
 }
 
 @keyframes jl-box {
-  0% { outline-color: #ff2d55; box-shadow: 0 0 18px rgba(255, 45, 85, 0.45); }
-  33% { outline-color: #ff9f0a; box-shadow: 0 0 18px rgba(255, 159, 10, 0.45); }
-  66% { outline-color: #0a84ff; box-shadow: 0 0 18px rgba(10, 132, 255, 0.45); }
-  100% { outline-color: #ff2d55; box-shadow: 0 0 18px rgba(255, 45, 85, 0.45); }
+  0%, 100% { box-shadow: 0 0 10px rgba(var(--thanos-rgb), 0.3); }
+  50% { box-shadow: 0 0 22px rgba(var(--thanos-rgb), 0.6); }
 }
 
 /* ---------- pill ---------- */
@@ -77,9 +83,10 @@ body.jl-on {
   width: min(560px, calc(100vw - 32px));
   padding: 12px 18px;
   border-radius: 999px;
-  background: rgba(18, 18, 20, 0.92);
+  background: rgba(22, 14, 36, 0.94);
+  border: 1px solid rgba(var(--thanos-rgb), 0.45);
   color: #f5f5f7;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 40px rgba(var(--thanos-rgb), 0.25);
   backdrop-filter: blur(12px);
   font: 15px/1.3 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
   opacity: 0;
@@ -97,17 +104,17 @@ body.jl-on {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #8e8e93;
+  background: var(--thanos);
 }
 
 .jl-pill.jl-listening .jl-dot {
-  background: #ff453a;
+  background: #c084fc;
   animation: jl-pulse 1.2s ease-in-out infinite;
 }
 
 @keyframes jl-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 69, 58, 0.6); }
-  50% { box-shadow: 0 0 0 8px rgba(255, 69, 58, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--thanos-rgb), 0.7); }
+  50% { box-shadow: 0 0 0 8px rgba(var(--thanos-rgb), 0); }
 }
 
 .jl-body {

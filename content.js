@@ -60,11 +60,11 @@
   // Periods that don't end a sentence: "Downey Jr. (born", "U.S. Army", "c. 1900".
   const ABBREVIATION = /(?:^|[\s(])(?:Jr|Sr|Dr|Mr|Mrs|Ms|St|Mt|Inc|Ltd|Co|Corp|vs|etc|No|Vol|Gen|Col|Lt|Sgt|Capt|Rev|Prof|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|c|ca|e\.g|i\.e|U\.S|[A-Z])\.$/;
 
-  const settings = { effect: "thanos", engine: "tree" };
+  const settings = { effect: "thanos", engine: "tree", voice: "gpt-4o-transcribe" };
   chrome.storage.local.get(settings).then((stored) => Object.assign(settings, stored));
   chrome.storage.onChanged.addListener((changes) => {
     for (const [key, { newValue }] of Object.entries(changes)) if (key in settings) settings[key] = newValue;
-    clear();
+    if (changes.effect || changes.engine) clear();
   });
 
   let root = null;
@@ -368,11 +368,12 @@
     if (!thanos()) clearHighlights();
     active = true;
 
-    const unreachable = () => {
+    const unreachable = (error) => {
       if (id !== run) return;
       if (!kept.length) clear();
       showPill();
-      setStatus("Can't reach Jev. Run: uv run jev-lens", true);
+      setStatus(error || "Can't reach Jev", true);
+      hidePill(4000);
     };
     if (settings.engine === "tree") askTree(question, id, unreachable);
     else askSentences(question, id, unreachable);
@@ -603,9 +604,9 @@
   }
 
   // ---------- push to talk (hold Option) ----------
-  // The audio is recorded and transcribed by gpt-4o-transcribe on release (much better with
-  // accents and names than Chrome's recognizer). Chrome's recognizer still runs alongside
-  // for the live preview in the pill.
+  // With an OpenAI voice engine (picked in the popup), the audio is recorded and transcribed
+  // on release, which is much better with accents and names than Chrome's recognizer.
+  // Chrome's recognizer always runs for the live words in the pill, and is the fallback.
 
   let holding = false;
   let stream = null;
@@ -620,6 +621,8 @@
     input.value = "";
     pill.classList.add("jl-listening");
     setStatus("Listening… let go of ⌥ to ask");
+    startPreview(input);
+    if (settings.voice === "chrome") return;
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -635,19 +638,39 @@
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.start();
+  }
 
+  // Chrome's recognizer: the live words in the pill, and the whole answer when the voice
+  // engine is "chrome".
+  function startPreview(input) {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (Recognition) {
-      preview = new Recognition();
-      preview.lang = "en-US";
-      preview.continuous = true;
-      preview.interimResults = true;
-      preview.onresult = (e) => {
-        if (pill) input.value = Array.from(e.results, (r) => r[0].transcript).join("");
+    if (!Recognition) return;
+    preview = new Recognition();
+    preview.lang = "en-US";
+    preview.continuous = true;
+    preview.interimResults = true;
+    preview.onresult = (e) => {
+      if (pill) input.value = Array.from(e.results, (r) => r[0].transcript).join("");
+    };
+    preview.onerror = () => {};
+    preview.start();
+  }
+
+  // Stops the recognizer and resolves with its final words.
+  function finishPreview() {
+    const input = pill?.querySelector("input");
+    const recognizer = preview;
+    preview = null;
+    if (!recognizer) return Promise.resolve(input?.value.trim() ?? "");
+    return new Promise((resolve) => {
+      const finish = () => {
+        clearTimeout(timer);
+        resolve(input?.value.trim() ?? "");
       };
-      preview.onerror = () => {};
-      preview.start();
-    }
+      const timer = setTimeout(finish, 1500);
+      recognizer.onend = finish;
+      recognizer.stop();
+    });
   }
 
   function stopRecording(discard) {
@@ -674,29 +697,69 @@
 
   async function stopListening() {
     pill?.classList.remove("jl-listening");
-    const spoken = pill?.querySelector("input").value.trim();
+    const spoken = finishPreview();
     const recording = stopRecording(false);
-    if (!recording) {
-      if (pill && !spoken) {
-        setStatus("Didn't catch that");
-        hidePill(1200);
-      }
-      return;
+    if (recording) {
+      setStatus("Transcribing…");
+      const reply = await recording
+        .then(toWav16k)
+        .then(async (wav) =>
+          chrome.runtime.sendMessage({
+            type: "transcribe",
+            model: settings.voice,
+            audio: await toBase64(wav),
+            title: document.title,
+          })
+        )
+        .catch(() => null);
+      if (reply?.text?.trim()) return ask(reply.text.trim());
     }
-    setStatus("Transcribing…");
-    const blob = await recording;
-    const audio = await new Promise((resolve) => {
+    const question = await spoken;
+    if (question) return ask(question);
+    setStatus("Didn't catch that");
+    hidePill(1200);
+  }
+
+  // 16 kHz mono WAV: small, and every OpenAI transcription model takes it.
+  async function toWav16k(blob) {
+    const context = new AudioContext();
+    const decoded = await context.decodeAudioData(await blob.arrayBuffer());
+    context.close();
+    const rate = 16000;
+    const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * rate), rate);
+    const source = offline.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offline.destination);
+    source.start();
+    const samples = (await offline.startRendering()).getChannelData(0);
+
+    const view = new DataView(new ArrayBuffer(44 + samples.length * 2));
+    const text = (offset, value) => [...value].forEach((c, i) => view.setUint8(offset + i, c.charCodeAt(0)));
+    text(0, "RIFF");
+    view.setUint32(4, 36 + samples.length * 2, true);
+    text(8, "WAVEfmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM
+    view.setUint16(22, 1, true); // mono
+    view.setUint32(24, rate, true);
+    view.setUint32(28, rate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    text(36, "data");
+    view.setUint32(40, samples.length * 2, true);
+    samples.forEach((sample, i) => {
+      const clamped = Math.max(-1, Math.min(1, sample));
+      view.setInt16(44 + i * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+    });
+    return new Blob([view], { type: "audio/wav" });
+  }
+
+  function toBase64(blob) {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result.split(",")[1]);
       reader.readAsDataURL(blob);
     });
-    const reply = await chrome.runtime
-      .sendMessage({ type: "transcribe", audio, mime: blob.type, prompt: document.title })
-      .catch(() => null);
-    const question = reply?.text?.trim() || spoken;
-    if (question) return ask(question);
-    setStatus("Didn't catch that");
-    hidePill(1200);
   }
 
   let altDownAt = 0;

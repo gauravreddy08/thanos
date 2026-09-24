@@ -1,4 +1,4 @@
-const defaults = { effect: "thanos", engine: "tree" };
+const defaults = { effect: "thanos", engine: "tree", voice: "gpt-4o-transcribe" };
 
 chrome.storage.local.get(defaults).then((settings) => {
   for (const toggle of document.querySelectorAll(".toggle")) {
@@ -15,3 +15,4 @@ chrome.storage.local.get(defaults).then((settings) => {
     render();
   }
 });
+

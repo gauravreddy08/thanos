@@ -1,23 +1,42 @@
 {
   "manifest_version": 3,
   "name": "Project Thanos",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Ask a page a question out loud. Everything that doesn't answer it fades away, or the answer lights up.",
-  "permissions": ["storage"],
-  "host_permissions": ["http://127.0.0.1:8765/*"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "Project Thanos" },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.typesafe.ai/*",
+    "https://api.openai.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Project Thanos"
+  },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
   "commands": {
     "toggle-lens": {
-      "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
       "description": "Type a question to the page"
     }
   }
