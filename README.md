@@ -14,9 +14,11 @@ into its children, down to single sentences.
 2. In the unzipped folder, copy `config.example.js` to `config.js` and add your keys:
    - `TYPESAFE_API_KEY` (required): Jev decides what stays. Get one at [typesafe.ai](https://typesafe.ai).
    - `OPENAI_API_KEY` (optional): for the Whisper / 4o voice engines.
+   - `VOICE` and `ENGINE`: which voice engine and which page engine to use (see below).
 3. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked**, and pick
    the folder.
-4. Pin the extension (puzzle-piece icon → pin) and pick a voice engine in its popup.
+4. Pin the extension (puzzle-piece icon → pin). Clicking Thanos opens a small panel at the
+   top right of the page; it stays while you browse until you close it.
 
 Your keys stay in that folder and are sent only to TypeSafe and OpenAI. After editing
 `config.js`, click ↻ on the extension to reload it.
@@ -32,19 +34,21 @@ Your keys stay in that folder and are sent only to TypeSafe and OpenAI. After ed
 
 The first time you hold ⌥ on a site, Chrome asks for microphone access.
 
-Click the extension icon to switch:
+The panel's slider picks the effect: left is **Highlight** (the answer glows), right is
+**Thanos** (everything else disappears). The toolbar icon grins when Thanos is on.
 
-- **Effect**: Thanos (everything else disappears) or Highlight (the answer glows).
-- **Engine**: Tree (keeps cards whole, digs into prose) or Sentences (every sentence scored on
-  its own).
-- **Voice**: Chrome (built in, no key), Whisper (`whisper-1`), 4o mini
-  (`gpt-4o-mini-transcribe`) or 4o (`gpt-4o-transcribe`, the most accurate). The OpenAI
-  engines fall back to Chrome's transcript if a request fails.
+In `config.js`:
+
+- `VOICE`: `"chrome"` (built in, no key), `"whisper-1"`, `"gpt-4o-mini-transcribe"`, or
+  `"gpt-4o-transcribe"` (the most accurate). The OpenAI engines fall back to Chrome's
+  transcript if a request fails.
+- `ENGINE`: `"tree"` (keeps cards whole, digs into prose) or `"sentences"` (every sentence
+  scored on its own).
 
 ## Build the zip
 
 ```bash
 rm -rf build && mkdir -p build/project-thanos
-cp extension/{manifest.json,*.html,*.css,background.js,content.js,popup.js,config.example.js} build/project-thanos/
+cp -r extension/{manifest.json,*.css,background.js,content.js,panel.js,config.example.js,icons} build/project-thanos/
 cd build && zip -r project-thanos.zip project-thanos
 ```

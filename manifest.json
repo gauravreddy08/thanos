@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Project Thanos",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Ask a page a question out loud. Everything that doesn't answer it fades away, or the answer lights up.",
   "permissions": [
     "storage"
@@ -14,7 +14,12 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/thanos-off-16.png",
+      "32": "icons/thanos-off-32.png",
+      "48": "icons/thanos-off-48.png",
+      "128": "icons/thanos-off-128.png"
+    },
     "default_title": "Project Thanos"
   },
   "content_scripts": [
@@ -23,6 +28,7 @@
         "<all_urls>"
       ],
       "js": [
+        "panel.js",
         "content.js"
       ],
       "css": [
@@ -39,5 +45,22 @@
       },
       "description": "Type a question to the page"
     }
-  }
+  },
+  "icons": {
+    "16": "icons/thanos-off-16.png",
+    "32": "icons/thanos-off-32.png",
+    "48": "icons/thanos-off-48.png",
+    "128": "icons/thanos-off-128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "panel.css",
+        "icons/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }

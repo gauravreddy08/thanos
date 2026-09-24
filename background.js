@@ -32,6 +32,25 @@ const COVERAGE = {
   },
 };
 
+// Engine and voice come from config.js; the page reads them from storage.
+chrome.storage.local.set({ engine: CONFIG.ENGINE ?? "tree", voice: CONFIG.VOICE ?? "gpt-4o-transcribe" });
+
+// The toolbar icon opens the panel on the page, and shows Thanos grinning when he's on.
+chrome.action.onClicked.addListener((tab) => {
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "panel" }).catch(() => {});
+});
+
+const showIcon = (effect) => {
+  const state = effect === "thanos" ? "on" : "off";
+  chrome.action.setIcon({
+    path: Object.fromEntries([16, 32, 48, 128].map((n) => [n, `icons/thanos-${state}-${n}.png`])),
+  });
+};
+chrome.storage.local.get({ effect: "highlight" }).then(({ effect }) => showIcon(effect));
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.effect) showIcon(changes.effect.newValue);
+});
+
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "toggle-lens" && tab?.id) {
     chrome.tabs.sendMessage(tab.id, { type: "toggle" }).catch(() => {});

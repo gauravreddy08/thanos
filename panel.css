@@ -1,0 +1,195 @@
+/* The Project Thanos panel: pinned top-right, small enough to keep browsing. Lives in a
+   shadow root, so page styles never reach it. */
+
+:host {
+  all: initial;
+  --thanos: #8b5cf6;
+  --thanos-rgb: 139, 92, 246;
+  --track: #eee9f9;
+  --muted: #a8a3b3;
+}
+
+.panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483646;
+  box-sizing: border-box;
+  width: 232px;
+  padding: 18px 18px 10px;
+  overflow: hidden;
+  border: 1px solid rgba(var(--thanos-rgb), 0.18);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(35, 20, 70, 0.14);
+  color: #1d1b22;
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transition: opacity 0.22s ease, transform 0.22s ease, background 0.6s ease;
+  user-select: none;
+}
+
+.panel.in {
+  opacity: 1;
+  transform: none;
+}
+
+.panel.on {
+  background: radial-gradient(120% 90% at 100% 0%, rgba(var(--thanos-rgb), 0.09), #fff 60%);
+}
+
+.close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b8b3c2;
+  font: 15px/20px -apple-system, BlinkMacSystemFont, sans-serif;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: #f3f0fa;
+  color: var(--thanos);
+}
+
+/* ---------- slider ---------- */
+
+.slider {
+  position: relative;
+  height: 52px;
+  margin: 4px 21px 0;
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.track {
+  position: absolute;
+  top: 50%;
+  right: -21px;
+  left: -21px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+  transform: translateY(-50%);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--pos) * (100% - 42px) + 21px);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #c4b5fd, var(--thanos));
+  background-size: 200% 100%;
+}
+
+.panel.on .fill {
+  background-image: linear-gradient(90deg, #c4b5fd, var(--thanos) 40%, #ddd6fe 50%, var(--thanos) 60%, #7c3aed);
+  animation: flow 2.6s linear infinite;
+}
+
+@keyframes flow {
+  from { background-position: 200% 0; }
+  to { background-position: 0 0; }
+}
+
+.thumb {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--pos) * 100%);
+  width: 40px;
+  height: 52px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 3px 6px rgba(var(--thanos-rgb), 0.35));
+}
+
+.slider:not(.dragging) .fill,
+.slider:not(.dragging) .thumb {
+  transition: left 0.35s cubic-bezier(0.3, 1.4, 0.5, 1), width 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+  -webkit-user-drag: none;
+}
+
+.thumb .on-face,
+.slider.grin .off-face {
+  opacity: 0;
+}
+
+.slider.grin .on-face {
+  opacity: 1;
+}
+
+.slider:focus-visible .track {
+  box-shadow: 0 0 0 2px rgba(var(--thanos-rgb), 0.35);
+}
+
+.labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
+.labels span {
+  transition: color 0.3s ease;
+}
+
+.panel:not(.on) .labels .off,
+.panel.on .labels .on {
+  color: var(--thanos);
+  font-weight: 600;
+}
+
+.hint {
+  margin-top: 12px;
+  color: #cdc9d4;
+  font-size: 10px;
+  text-align: center;
+}
+
+/* ---------- the snap: a purple shimmer across the panel ---------- */
+
+.shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(var(--thanos-rgb), 0.12) 40%,
+    rgba(var(--thanos-rgb), 0.38) 50%,
+    rgba(var(--thanos-rgb), 0.12) 60%,
+    transparent 75%
+  );
+  background-size: 300% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.shimmer.go {
+  animation: sweep 1.1s ease-out;
+}
+
+@keyframes sweep {
+  0% { opacity: 1; background-position: 100% 0; }
+  80% { opacity: 1; }
+  100% { opacity: 0; background-position: -100% 0; }
+}

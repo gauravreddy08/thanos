@@ -1,7 +1,7 @@
 // Project Thanos: ask a page a question out loud. In Thanos mode everything that doesn't
 // answer it fades; in Highlight mode the answer lights up.
 //
-// Two engines (switch in the toolbar popup):
+// Two engines (ENGINE in config.js):
 //  - tree (default): the page's text is collapsed into a tree of items. A wrapper with one
 //    text-bearing child merges into it; where two or more text-bearing branches meet, that's
 //    a node. Jev walks the tree from the top: keep the whole node, leave it out, or dig into
@@ -60,11 +60,17 @@
   // Periods that don't end a sentence: "Downey Jr. (born", "U.S. Army", "c. 1900".
   const ABBREVIATION = /(?:^|[\s(])(?:Jr|Sr|Dr|Mr|Mrs|Ms|St|Mt|Inc|Ltd|Co|Corp|vs|etc|No|Vol|Gen|Col|Lt|Sgt|Capt|Rev|Prof|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|c|ca|e\.g|i\.e|U\.S|[A-Z])\.$/;
 
-  const settings = { effect: "thanos", engine: "tree", voice: "gpt-4o-transcribe" };
+  // effect: the panel's slider. engine, voice: config.js, copied to storage by the background.
+  const settings = { effect: "highlight", engine: "tree", voice: "gpt-4o-transcribe" };
   chrome.storage.local.get(settings).then((stored) => Object.assign(settings, stored));
   chrome.storage.onChanged.addListener((changes) => {
-    for (const [key, { newValue }] of Object.entries(changes)) if (key in settings) settings[key] = newValue;
-    if (changes.effect || changes.engine) clear();
+    let switched = false;
+    for (const [key, { oldValue, newValue }] of Object.entries(changes)) {
+      if (!(key in settings) || newValue === undefined) continue;
+      settings[key] = newValue;
+      if (key !== "voice" && newValue !== oldValue) switched = true;
+    }
+    if (switched) clear();
   });
 
   let root = null;
@@ -604,7 +610,7 @@
   }
 
   // ---------- push to talk (hold Option) ----------
-  // With an OpenAI voice engine (picked in the popup), the audio is recorded and transcribed
+  // With an OpenAI voice engine (VOICE in config.js), the audio is recorded and transcribed
   // on release, which is much better with accents and names than Chrome's recognizer.
   // Chrome's recognizer always runs for the live words in the pill, and is the fallback.
 
