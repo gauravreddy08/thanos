@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Jev Lens",
-  "version": "0.1.0",
-  "description": "Ask a page a question out loud. Everything that doesn't answer it fades away.",
+  "name": "Project Thanos",
+  "version": "0.2.0",
+  "description": "Ask a page a question out loud. Everything that doesn't answer it fades away, or the answer lights up.",
+  "permissions": ["storage"],
   "host_permissions": ["http://127.0.0.1:8765/*"],
   "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "Project Thanos" },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -16,7 +18,7 @@
   "commands": {
     "toggle-lens": {
       "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
-      "description": "Ask the page a question"
+      "description": "Type a question to the page"
     }
   }
 }

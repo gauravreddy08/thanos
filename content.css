@@ -34,6 +34,36 @@ body.jl-on {
   background: #fff !important;
 }
 
+/* ---------- highlight mode ---------- */
+
+.jl-s.jl-hl {
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(255, 45, 85, 0.16), rgba(255, 159, 10, 0.16), rgba(10, 132, 255, 0.16));
+  text-decoration: underline wavy #ff2d55;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  animation: jl-glow 2.4s ease-in-out infinite;
+}
+
+.jl-hl-box {
+  border-radius: 10px;
+  outline: 2px solid #ff2d55;
+  outline-offset: 4px;
+  animation: jl-box 2.4s linear infinite;
+}
+
+@keyframes jl-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 45, 85, 0.35); }
+  50% { box-shadow: 0 0 14px rgba(10, 132, 255, 0.45); }
+}
+
+@keyframes jl-box {
+  0% { outline-color: #ff2d55; box-shadow: 0 0 18px rgba(255, 45, 85, 0.45); }
+  33% { outline-color: #ff9f0a; box-shadow: 0 0 18px rgba(255, 159, 10, 0.45); }
+  66% { outline-color: #0a84ff; box-shadow: 0 0 18px rgba(10, 132, 255, 0.45); }
+  100% { outline-color: #ff2d55; box-shadow: 0 0 18px rgba(255, 45, 85, 0.45); }
+}
+
 /* ---------- pill ---------- */
 
 .jl-pill {
