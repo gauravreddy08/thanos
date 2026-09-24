@@ -34,8 +34,10 @@ Your keys stay in that folder and are sent only to TypeSafe and OpenAI. After ed
 
 The first time you hold ⌥ on a site, Chrome asks for microphone access.
 
-The panel's slider picks the effect: left is **Highlight** (the answer glows), right is
-**Thanos** (everything else disappears). The toolbar icon grins when Thanos is on.
+The panel's slider picks the effect: left is **Highlights Mode** (the answer glows), right
+is **Thanos Mode** (everything else crumbles to dust, like Google's old Thanos snap). The
+toolbar icon grins when Thanos is on. The dust is cut from a screenshot of the visible
+page, which is why the extension asks for access to all sites.
 
 In `config.js`:
 
@@ -49,6 +51,6 @@ In `config.js`:
 
 ```bash
 rm -rf build && mkdir -p build/project-thanos
-cp -r extension/{manifest.json,*.css,background.js,content.js,panel.js,config.example.js,icons} build/project-thanos/
+cp -r extension/{manifest.json,*.css,background.js,content.js,panel.js,dust.js,config.example.js,icons} build/project-thanos/
 cd build && zip -r project-thanos.zip project-thanos
 ```

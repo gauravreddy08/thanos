@@ -136,6 +136,17 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
+// ---------- dust ----------
+// One screenshot of the visible page per Thanos question; dust.js cuts the pieces from it.
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type !== "capture" || !sender.tab) return;
+  chrome.tabs
+    .captureVisibleTab(sender.tab.windowId, { format: "png" })
+    .then((dataUrl) => sendResponse({ dataUrl }), () => sendResponse({}));
+  return true; // answer asynchronously
+});
+
 // ---------- speech ----------
 // `model` is the OpenAI transcription model picked in the popup (whisper-1,
 // gpt-4o-mini-transcribe, gpt-4o-transcribe). "chrome" never gets here.

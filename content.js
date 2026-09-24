@@ -266,20 +266,26 @@
 
   // ---------- visuals ----------
 
+  // On screen, things crumble to dust (dust.js); off screen, they fade.
   function drop(unit) {
+    const showing = unit.spans.filter((span) => !span.classList.contains("jl-drop"));
+    if (!showing.length) return;
+    const dusted = ThanosDust.crumble(showing);
     const delay = `${Math.round(Math.random() * 180)}ms`;
-    for (const span of unit.spans) {
+    for (const span of showing) {
       span.style.transitionDelay = delay;
+      span.classList.toggle("jl-dusted", dusted);
       span.classList.add("jl-drop");
     }
   }
 
   function undrop(unit) {
-    for (const span of unit.spans) span.classList.remove("jl-drop");
+    for (const span of unit.spans) span.classList.remove("jl-drop", "jl-dusted");
   }
 
-  function fadeEl(el) {
+  function fadeEl(el, dust = true) {
     if (!el || el.classList.contains("jl-gone")) return;
+    if (dust && ThanosDust.crumble(el)) el.classList.add("jl-dusted");
     el.classList.add("jl-gone");
     treeFaded.add(el);
   }
@@ -287,7 +293,7 @@
   function unfadeWithin(el) {
     for (const faded of treeFaded) {
       if (el.contains(faded)) {
-        faded.classList.remove("jl-gone");
+        faded.classList.remove("jl-gone", "jl-dusted");
         treeFaded.delete(faded);
       }
     }
@@ -321,10 +327,11 @@
     const targets = [...document.querySelectorAll(".jl-skip")];
     if (settings.engine === "sentences") targets.push(...root.querySelectorAll(MEDIA));
     for (const el of targets) {
-      if (!el.classList.contains("jl-gone")) {
-        el.classList.add("jl-gone");
-        snapped.push(el);
-      }
+      if (el.classList.contains("jl-gone")) continue;
+      // Crumble only the outermost pieces; what's inside goes with them.
+      if (!el.parentElement?.closest(".jl-skip, .jl-gone") && ThanosDust.crumble(el)) el.classList.add("jl-dusted");
+      el.classList.add("jl-gone");
+      snapped.push(el);
     }
     if (settings.engine === "sentences") units.filter((u) => u.trivial).forEach(drop);
   }
@@ -357,7 +364,7 @@
     ports.clear();
   }
 
-  function ask(question) {
+  async function ask(question) {
     if (!question) return;
     const id = ++run;
     closePorts();
@@ -370,12 +377,18 @@
       units = buildUnits(root);
       ({ top: tree, nodes: treeNodes } = buildTree(root, units));
     }
+    if (thanos()) {
+      await ThanosDust.capture();
+      if (id !== run) return;
+    }
     if (thanos() && !active) snapOne();
     if (!thanos()) clearHighlights();
     active = true;
+    startGlow();
 
     const unreachable = (error) => {
       if (id !== run) return;
+      stopGlow();
       if (!kept.length) clear();
       showPill();
       setStatus(error || "Can't reach Jev", true);
@@ -519,7 +532,7 @@
           // A node we dug into where nothing survived goes as a whole, borders and all.
           if (thanos()) {
             const keptUnits = new Set(found.flatMap((node) => node.all));
-            for (const node of dug) if (node !== tree && !node.all.some((u) => keptUnits.has(u))) fadeEl(node.el);
+            for (const node of dug) if (node !== tree && !node.all.some((u) => keptUnits.has(u))) fadeEl(node.el, false);
           }
           kept = found;
           done(
@@ -537,12 +550,14 @@
   }
 
   function notFound() {
+    stopGlow();
     showPill();
     setStatus("Couldn't find that here", true);
     hidePill(PILL_LINGER_MS);
   }
 
   function done(summary, started, targets) {
+    stopGlow();
     setStatus(`${summary} · ${((performance.now() - started) / 1000).toFixed(1)}s`);
     hidePill(PILL_LINGER_MS);
     const first = targets.filter(Boolean).sort((a, b) =>
@@ -562,12 +577,14 @@
     kept = [];
     document.body.classList.remove("jl-on");
     root?.classList.remove("jl-root");
-    snapped.forEach((el) => el.classList.remove("jl-gone"));
+    ThanosDust.forget();
+    snapped.forEach((el) => el.classList.remove("jl-gone", "jl-dusted"));
     snapped = [];
-    treeFaded.forEach((el) => el.classList.remove("jl-gone"));
+    treeFaded.forEach((el) => el.classList.remove("jl-gone", "jl-dusted"));
     treeFaded.clear();
     units?.forEach(undrop);
     clearHighlights();
+    stopGlow();
     hidePill(0);
   }
 
@@ -607,6 +624,22 @@
       leaving.classList.remove("jl-in");
       setTimeout(() => leaving.remove(), 300);
     }, delay);
+  }
+
+  // A faint purple edge around the window while Jev is reading the page.
+  let glow = null;
+
+  function startGlow() {
+    if (!glow) {
+      glow = document.createElement("div");
+      glow.className = "jl-glow";
+      document.documentElement.append(glow);
+    }
+    requestAnimationFrame(() => glow?.classList.add("jl-in"));
+  }
+
+  function stopGlow() {
+    glow?.classList.remove("jl-in");
   }
 
   // ---------- push to talk (hold Option) ----------
