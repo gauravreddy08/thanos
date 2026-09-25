@@ -602,7 +602,7 @@
     if (pill) return pill;
     pill = document.createElement("div");
     pill.className = "jl-pill";
-    pill.innerHTML = `<span class="jl-dot"></span><div class="jl-body"><input placeholder="Ask this page…" spellcheck="false"><div class="jl-status"></div></div>`;
+    pill.innerHTML = `<span class="jl-dot"></span><div class="jl-body"><div class="jl-line"><input placeholder="Ask this page…" spellcheck="false"><div class="jl-wave">${"<i></i>".repeat(32)}</div><div class="jl-loading"><span>Transcribing</span><i></i><i></i><i></i></div></div><div class="jl-status"></div></div>`;
     document.documentElement.append(pill);
     requestAnimationFrame(() => pill?.classList.add("jl-in"));
 
@@ -660,8 +660,12 @@
     input.value = "";
     pill.classList.add("jl-listening");
     setStatus("Listening… let go of ⌃⌥ to ask");
-    startPreview(input);
-    if (settings.voice === "chrome") return;
+    // With an OpenAI engine, Chrome's rough live guess stays hidden: a waveform shows
+    // we're hearing you, and only the real transcript is ever shown.
+    const live = settings.voice === "chrome";
+    startPreview(input, live);
+    if (live) return;
+    pill.classList.add("jl-recording");
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -673,15 +677,19 @@
     }
     if (!holding) return stopRecording(true); // let go while Chrome was asking for the mic
 
+    startMeter(stream);
     chunks = [];
     recorder = new MediaRecorder(stream);
     recorder.ondataavailable = (e) => chunks.push(e.data);
     recorder.start();
   }
 
-  // Chrome's recognizer: the live words in the pill, and the whole answer when the voice
-  // engine is "chrome".
-  function startPreview(input) {
+  // Chrome's recognizer: the whole answer when the voice engine is "chrome" (shown live),
+  // otherwise a silent fallback in case the OpenAI request fails.
+  let previewText = "";
+
+  function startPreview(input, visible) {
+    previewText = "";
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Recognition) return;
     preview = new Recognition();
@@ -689,7 +697,8 @@
     preview.continuous = true;
     preview.interimResults = true;
     preview.onresult = (e) => {
-      if (pill) input.value = Array.from(e.results, (r) => r[0].transcript).join("");
+      previewText = Array.from(e.results, (r) => r[0].transcript).join("");
+      if (visible && pill) input.value = previewText;
     };
     preview.onerror = () => {};
     preview.start();
@@ -697,14 +706,13 @@
 
   // Stops the recognizer and resolves with its final words.
   function finishPreview() {
-    const input = pill?.querySelector("input");
     const recognizer = preview;
     preview = null;
-    if (!recognizer) return Promise.resolve(input?.value.trim() ?? "");
+    if (!recognizer) return Promise.resolve(previewText.trim());
     return new Promise((resolve) => {
       const finish = () => {
         clearTimeout(timer);
-        resolve(input?.value.trim() ?? "");
+        resolve(previewText.trim());
       };
       const timer = setTimeout(finish, 1500);
       recognizer.onend = finish;
@@ -712,7 +720,43 @@
     });
   }
 
+  // The waveform: bars scroll left with the mic level, so they only move when you talk.
+  let meter = null;
+
+  function startMeter(stream) {
+    const bars = [...(pill?.querySelectorAll(".jl-wave i") ?? [])];
+    if (!bars.length) return;
+    const context = new AudioContext();
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 512;
+    context.createMediaStreamSource(stream).connect(analyser);
+    const samples = new Uint8Array(analyser.fftSize);
+    const levels = new Array(bars.length).fill(0);
+    let frame = 0;
+    const tick = () => {
+      analyser.getByteTimeDomainData(samples);
+      let sum = 0;
+      for (const v of samples) sum += ((v - 128) / 128) ** 2;
+      if (frame++ % 2 === 0) {
+        levels.shift();
+        levels.push(Math.min(1, Math.sqrt(sum / samples.length) * 5));
+        bars.forEach((bar, i) => (bar.style.transform = `scaleY(${0.14 + levels[i] * 0.86})`));
+      }
+      meter.raf = requestAnimationFrame(tick);
+    };
+    meter = { context, raf: requestAnimationFrame(tick) };
+  }
+
+  function stopMeter() {
+    if (!meter) return;
+    cancelAnimationFrame(meter.raf);
+    meter.context.close();
+    meter = null;
+  }
+
   function stopRecording(discard) {
+    stopMeter();
+    pill?.classList.remove("jl-recording");
     holding = false;
     preview?.abort();
     preview = null;
@@ -739,7 +783,8 @@
     const spoken = finishPreview();
     const recording = stopRecording(false);
     if (recording) {
-      setStatus("Transcribing…");
+      pill?.classList.add("jl-transcribing");
+      setStatus(" ");
       const reply = await recording
         .then(toWav16k)
         .then(async (wav) =>
@@ -751,6 +796,7 @@
           })
         )
         .catch(() => null);
+      pill?.classList.remove("jl-transcribing");
       if (reply?.text?.trim()) return ask(reply.text.trim());
     }
     const question = await spoken;

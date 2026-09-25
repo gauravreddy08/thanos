@@ -127,6 +127,84 @@ body.jl-on {
   min-width: 0;
 }
 
+/* The question line. While recording or transcribing, the waveform or the loader takes
+   its place, so only the real transcript is ever shown. */
+.jl-line {
+  position: relative;
+}
+
+.jl-wave,
+.jl-loading {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+}
+
+.jl-pill.jl-recording input,
+.jl-pill.jl-transcribing input {
+  visibility: hidden;
+}
+
+.jl-pill.jl-recording .jl-wave,
+.jl-pill.jl-transcribing .jl-loading {
+  display: flex;
+}
+
+.jl-wave {
+  gap: 3px;
+}
+
+.jl-wave i {
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #a78bfa, var(--thanos));
+  transform: scaleY(0.14);
+  transition: transform 0.08s linear;
+}
+
+.jl-loading {
+  gap: 3px;
+  font-size: 15px;
+}
+
+.jl-loading span {
+  margin-right: 3px;
+  background: linear-gradient(90deg, #8a8594 0%, #8a8594 40%, var(--thanos) 50%, #8a8594 60%, #8a8594 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: jl-shine 1.4s linear infinite;
+}
+
+.jl-loading i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--thanos);
+  animation: jl-bounce 1s ease-in-out infinite;
+}
+
+.jl-loading i:nth-child(3) {
+  animation-delay: 0.15s;
+}
+
+.jl-loading i:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+@keyframes jl-shine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+
+@keyframes jl-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
 .jl-pill input {
   width: 100%;
   padding: 0;
