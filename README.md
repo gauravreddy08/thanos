@@ -1,6 +1,6 @@
 # Project Thanos
 
-Hold ⌥ Option on any web page and ask a question out loud. Everything that doesn't answer
+Hold ⌃ Control + ⌥ Option on any web page and ask a question out loud. Everything that doesn't answer
 it crumbles away like the Thanos snap, and the layout stays exactly where it was. Or switch
 to Highlights Mode and the answer lights up instead.
 
@@ -28,12 +28,12 @@ Your keys stay in that folder and are sent only to TypeSafe and OpenAI. After ed
 
 | | |
 |---|---|
-| Hold ⌥, speak, let go | Ask the page |
-| Hold ⌥ again | Ask something else; the page moves straight to the new answer |
-| Double-tap ⌥ or Esc | Bring the whole page back |
+| Hold ⌃⌥, speak, let go | Ask the page |
+| Hold ⌃⌥ again | Ask something else; the page moves straight to the new answer |
+| Double-tap ⌃⌥ or Esc | Bring the whole page back |
 | ⌘⇧K | Type a question instead of speaking |
 
-The first time you hold ⌥ on a site, Chrome asks for microphone access.
+The first time you hold ⌃⌥ on a site, Chrome asks for microphone access.
 
 The panel's slider picks the effect: left is **Highlights Mode** (the answer glows), right
 is **Thanos Mode** (everything else crumbles to dust, like Google's old Thanos snap). The

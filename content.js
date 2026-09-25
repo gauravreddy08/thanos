@@ -23,7 +23,7 @@
   const ASK_MAX_CHARS = 6000; // too long to show Jev whole: dig without asking
   const CARD_MAX_CHARS = 600;
 
-  const HOLD_MS = 180; // Option held this long (alone) starts listening
+  const HOLD_MS = 180; // ⌃⌥ held this long (alone) starts listening
   const DOUBLE_TAP_MS = 400;
   const PILL_LINGER_MS = 2500;
 
@@ -642,7 +642,7 @@
     glow?.classList.remove("jl-in");
   }
 
-  // ---------- push to talk (hold Option) ----------
+  // ---------- push to talk (hold ⌃⌥) ----------
   // With an OpenAI voice engine (VOICE in config.js), the audio is recorded and transcribed
   // on release, which is much better with accents and names than Chrome's recognizer.
   // Chrome's recognizer always runs for the live words in the pill, and is the fallback.
@@ -659,7 +659,7 @@
     const input = pill.querySelector("input");
     input.value = "";
     pill.classList.add("jl-listening");
-    setStatus("Listening… let go of ⌥ to ask");
+    setStatus("Listening… let go of ⌃⌥ to ask");
     startPreview(input);
     if (settings.voice === "chrome") return;
 
@@ -801,14 +801,16 @@
     });
   }
 
-  let altDownAt = 0;
+  // The hotkey is ⌃⌥ held together (Chrome never sees fn on a Mac). The chord starts when
+  // both are down and ends when either comes up.
+  let chordDownAt = 0;
   let holdTimer = null;
   let otherKey = false;
   let lastTapAt = 0;
 
-  function optionReleased() {
-    const heldFor = performance.now() - altDownAt;
-    altDownAt = 0;
+  function chordReleased() {
+    const heldFor = performance.now() - chordDownAt;
+    chordDownAt = 0;
     clearTimeout(holdTimer);
     if (holding) return stopListening();
     if (otherKey || heldFor >= HOLD_MS) return;
@@ -824,15 +826,15 @@
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.key === "Alt") {
-        if (e.repeat || altDownAt) return;
-        altDownAt = performance.now();
+      if (e.key === "Alt" || e.key === "Control") {
+        if (e.repeat || chordDownAt || !(e.altKey && e.ctrlKey)) return;
+        chordDownAt = performance.now();
         otherKey = false;
         holdTimer = setTimeout(startListening, HOLD_MS);
         return;
       }
-      if (altDownAt && !holding) {
-        // Option+letter types a character (å, ∑, …); that's not for us.
+      if (chordDownAt && !holding) {
+        // ⌃⌥ plus another key is some other shortcut; that's not for us.
         otherKey = true;
         clearTimeout(holdTimer);
       }
@@ -844,14 +846,14 @@
   document.addEventListener(
     "keyup",
     (e) => {
-      if (e.key === "Alt" && altDownAt) optionReleased();
+      if ((e.key === "Alt" || e.key === "Control") && chordDownAt) chordReleased();
     },
     true
   );
 
   // Switching windows mid-hold never delivers the keyup.
   window.addEventListener("blur", () => {
-    if (altDownAt) optionReleased();
+    if (chordDownAt) chordReleased();
   });
 
   // ⌘⇧K: type instead of talk.

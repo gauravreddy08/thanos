@@ -22,7 +22,7 @@
             <div class="thumb"></div>
           </div>
           <div class="ends"><span class="highlights">Highlights Mode</span><span class="thanos">Thanos Mode</span></div>
-          <div class="hint">hold ⌥ to ask · double-tap ⌥ to clear</div>
+          <div class="hint">hold ⌃⌥ to ask · double-tap ⌃⌥ to clear</div>
         </div>
         <button class="close" title="Close" aria-label="Close">×</button>
         <img class="sticker" src="${chrome.runtime.getURL("icons/thanos-sticker.png")}" alt="">
