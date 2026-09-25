@@ -47,3 +47,5 @@ In `config.js`:
   transcript if a request fails.
 - `ENGINE`: `"tree"` (keeps cards whole, digs into prose) or `"sentences"` (every sentence
   scored on its own).
+
+<p align="center"><img src="assets/footer.png" alt="Thanos" width="180"></p>
